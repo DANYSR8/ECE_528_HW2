@@ -129,30 +129,110 @@ There are 4 Timer_A modules that can be used for PWM (TA0,TA1,T2,T3) with five c
 
 
 
-## Section II: Code 
+## Section II: Code
 
-**11.	(25 pts) Describe the steps needed to initialize P2.4 as a PWM output driven by Timer_A0 CCR1 (TA0.1).** 
+**11.	(25 pts) Describe the steps needed to initialize P2.4 as a PWM output driven by Timer_A0 CCR1 (TA0.1).**
 
-Use the Timer_A2_PWM.c driver provided in Lab 1 (Motor Control) as a reference. 
+Use the Timer_A2_PWM.c driver provided in Lab 1 (Motor Control) as a reference.
 
 Include C code such that:
-•	The P2.4 pin is configured to use its primary module function (Timer_A output)
-•	SMCLK is selected as the clock source for Timer_A
-•	The timer clock is divided by 2
-•	Up/down mode is selected
-•	The output mode is configured as Toggle / Reset by setting the appropriate bits of the OUTMOD field in the CCTL[1] register
-•	The PWM signal has a period of 20 ms and a duty cycle of 50%
+
+***1. The P2.4 pin is configured to use its primary module function (Timer_A output)***
+
+Table 12-2 of the Technical Reference Manual and Table 6-67 of the datasheet show that P2.4 is set to its primary function (Timer_A output) with the following bit 4 settings:
+
+| Register | Bit 4 |
+|---|---|
+| `P2SEL1` | 1 |
+| `P2SEL0` | 0 |
+| `P2DIR` | 1 (output) |
 
 
+***2. SMCLK is selected as the clock source for Timer_A***
+
+To select SMCLK, we can refer to Table 19-4 of the Technical Reference Manual, which describes the `TAxCTL` register. Of the 16 bits in this register, we focus on bits 9–8, which make up the `TASSEL` field. SMCLK is selected by setting bit 9 to 1 and bit 8 to 0.
+
+From the table: `10b = SMCLK`
 
 
+***3. The timer clock is divided by 2***
+
+Table 19-4 also shows that bits 7–6 of `TAxCTL` (the `ID` field) control the timer input divider. To divide by 2, we set bit 7 to 0 and bit 6 to 1.
+
+From the table: `01b = /2`
 
 
-**12.	(20 pts) Describe the steps needed to configure Timer_A0 to generate a periodic interrupt every 2 ms with an interrupt priority level of 2. Note that Timer_A0 has an interrupt number of 8.** 
+***4. Up/down mode is selected***
+
+Table 19-4 also shows that bits 5–4 of `TAxCTL` (the `MC` field) control the timer mode. To select up/down mode, we set both bit 5 and bit 4 to 1.
+
+From the table: `11b = Up/down mode`
+
+
+***5. The output mode is configured as Toggle/Reset by setting the appropriate bits of the OUTMOD field in the CCTL[1] register***
+
+Table 19-6 of the Technical Reference Manual describes the `TAxCCTLn` register. Bits 7–5 make up the `OUTMOD` field, which sets the output mode. To select Toggle/Reset, we set bits 7–5 to `010b`.
+
+From the table: `010b = Toggle/reset`
+
+
+***6. The PWM signal has a period of 20 ms and a duty cycle of 50%***
+
+**Period:** We are given a period of 20 ms, so we calculate the period constant using the following general formula:
+
+$$ \text{Period} = \frac{2 \times \text{Period constant}}{12\text{ MHz} \,/\, \text{Prescale value}} $$
+
+Solving for the period constant:
+
+$$ \text{Period constant} = \frac{\text{Period} \times (12\text{ MHz} \,/\, \text{Prescale value})}{2} $$
+
+Plugging in our values:
+
+$$ \frac{0.020\text{ s} \times (12\text{ MHz}/2)}{2} = \frac{0.020\text{ s} \times 6{,}000{,}000\text{ Hz}}{2} = \frac{120{,}000}{2} = 60{,}000 $$
+
+So `TIMER_A0->CCR[0] = 60,000`.
+
+**Duty cycle:**
+
+$$ \text{Duty cycle} = \frac{\text{Input duty value}}{\text{Period constant}} $$
+
+$$ \text{Input duty value} = \text{Duty cycle} \times \text{Period constant} = 0.50 \times 60{,}000 = 30{,}000 $$
+
+So `TIMER_A0->CCR[1] = 30,000`.
+
+**Check:**
+
+$$ \text{High time} = \frac{2 \times 30{,}000}{12\text{ MHz}/2} = \frac{60{,}000}{6{,}000{,}000\text{ Hz}} = 10\text{ ms} $$
+
+This is 50% of the 20 ms period.
+
+
+**12.	(20 pts) Describe the steps needed to configure Timer_A0 to generate a periodic interrupt every 2 ms with an interrupt priority level of 2. Note that Timer_A0 has an interrupt number of 8.**
 
 Use the Timer_A0_Interrupt.c driver provided in Lab 1 (Motor Control) as a reference.
 
 Include C code such that:
-•	SMCLK is selected as the clock source for Timer_A with a prescaler value of 1 (which means the ID field will be 00b)
-•	The TAIDEX field in the TAxEX0 register has a value of 000b (divide by 1)
-•	Up mode is selected
+
+***1. SMCLK is selected as the clock source for Timer_A with a prescaler value of 1 (which means the ID field will be 00b)***
+
+As in Question 11, Table 19-4 of the Technical Reference Manual shows that bits 9–8 of `TAxCTL` (the `TASSEL` field) select the clock source. SMCLK is selected by setting bit 9 to 1 and bit 8 to 0.
+
+From the table: `10b = SMCLK`
+
+The same table shows that bits 7–6 (the `ID` field) control the input divider. To divide by 1, we set both bit 7 and bit 6 to 0.
+
+From the table: `00b = /1`
+
+
+***2. The TAIDEX field in the TAxEX0 register has a value of 000b (divide by 1)***
+
+Table 19-9 of the Technical Reference Manual describes the `TAxEX0` register and confirms that a `TAIDEX` value of `000b` divides the input clock by 1, matching the given requirement.
+
+From the table: `000b = Divide by 1`
+
+
+***3. Up mode is selected***
+
+Table 19-4 of the Technical Reference Manual shows that bits 5–4 of `TAxCTL` (the `MC` field) control the timer mode. To select up mode, we set bit 5 to 0 and bit 4 to 1.
+
+From the table: `01b = Up mode`
