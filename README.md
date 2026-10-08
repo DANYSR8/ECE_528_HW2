@@ -207,6 +207,35 @@ $$ \text{High time} = \frac{2 \times 30{,}000}{12\text{ MHz}/2} = \frac{60{,}000
 This is 50% of the 20 ms period.
 
 
+***Code Implmentation***
+
+```c
+
+// Setting up Port 2 Pin 4 (2.4) 
+    P2->SEL0 |= 0x10;  \\ Setting bit 4 to value of 1 for SEL0 
+    P2->SEL1 &= ~0x10; \\ Clearing bit 4 to value of 0 for SEL1 
+    P2->DIR |= 0x10;   \\ Setting bit 4 to value of 1 for SEL0
+
+// Setting Up CTL register for Timer A 
+    // Select SMCLK = 12 MHz as timer clock source -> From the table: `10b = SMCLK` for bits 9-8
+    // Set ID = 1 (Divide timer clock by 2) -> From the table: `01b = /2` for bits 7-6
+    // Set MC = 3 (Up/Down Mode)-> From the table: `11b = Up/down mode` for bits 5-4
+    // Results in a Bit Mask of = 0000 0010 0111 0000 --> Hex Equivalent of 0x0270
+
+    TIMER_A2->CTL |= 0x0270;
+
+// Setting up CCTL[1] "Output Capture" mode to Toggle/Reset
+
+                                  // Setting Toggle/Reset -> From the table: `010b = Toggle/reset` for bits 7-5
+    TIMER_A2->CCTL[1] |=0x0040    // Bit Mask = 0000 0000 0100 0000 --> Hex Equivalent of 0x0040
+
+// Setting as a Duty Cycle of 50%
+    TIMER_A2->CCR[1] =300000 ;     // Value calculated above 
+
+
+```
+
+
 **12.	(20 pts) Describe the steps needed to configure Timer_A0 to generate a periodic interrupt every 2 ms with an interrupt priority level of 2. Note that Timer_A0 has an interrupt number of 8.**
 
 Use the Timer_A0_Interrupt.c driver provided in Lab 1 (Motor Control) as a reference.
@@ -236,3 +265,16 @@ From the table: `000b = Divide by 1`
 Table 19-4 of the Technical Reference Manual shows that bits 5–4 of `TAxCTL` (the `MC` field) control the timer mode. To select up mode, we set bit 5 to 0 and bit 4 to 1.
 
 From the table: `01b = Up mode`
+
+***Code Implmentation***
+
+```c
+
+    // In the CTL register, set the TASSEL and ID bits
+    // Choose SMCLK as timer clock source (TASSEL = 10b)
+    // Choose prescale value of 1 (ID = 0)
+    TIMER_A0->CTL |= 0x0200;
+
+//Left off here 
+
+```
