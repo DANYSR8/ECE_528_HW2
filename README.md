@@ -129,152 +129,206 @@ There are 4 Timer_A modules that can be used for PWM (TA0,TA1,T2,T3) with five c
 
 
 
+
 ## Section II: Code
 
-**11.	(25 pts) Describe the steps needed to initialize P2.4 as a PWM output driven by Timer_A0 CCR1 (TA0.1).**
+**11. (25 pts) Describe the steps needed to initialize P2.4 as a PWM output driven by Timer_A0 CCR1 (TA0.1).**
 
 Use the Timer_A2_PWM.c driver provided in Lab 1 (Motor Control) as a reference.
 
 Include C code such that:
 
-***1. The P2.4 pin is configured to use its primary module function (Timer_A output)***
+**1. The P2.4 pin is configured to use its primary module function (Timer_A output)**
 
 Table 12-2 of the Technical Reference Manual and Table 6-67 of the datasheet show that P2.4 is set to its primary function (Timer_A output) with the following bit 4 settings:
 
-| Register | Bit 4 |
-|---|---|
-| `P2SEL1` | 1 |
-| `P2SEL0` | 0 |
-| `P2DIR` | 1 (output) |
+- P2SEL1 = 0
+- P2SEL0 = 1
+- P2DIR = 1 (output)
 
+**2. SMCLK is selected as the clock source for Timer_A**
 
-***2. SMCLK is selected as the clock source for Timer_A***
+To select SMCLK, we can refer to Table 19-4 of the Technical Reference Manual, which describes the TAxCTL register. Of the 16 bits in this register, we focus on bits 9–8, which make up the TASSEL field. SMCLK is selected by setting bit 9 to 1 and bit 8 to 0.
 
-To select SMCLK, we can refer to Table 19-4 of the Technical Reference Manual, which describes the `TAxCTL` register. Of the 16 bits in this register, we focus on bits 9–8, which make up the `TASSEL` field. SMCLK is selected by setting bit 9 to 1 and bit 8 to 0.
+From the table: 10b = SMCLK
 
-From the table: `10b = SMCLK`
+**3. The timer clock is divided by 2**
 
+Table 19-4 also shows that bits 7–6 of TAxCTL (the ID field) control the timer input divider. To divide by 2, we set bit 7 to 0 and bit 6 to 1.
 
-***3. The timer clock is divided by 2***
+From the table: 01b = /2
 
-Table 19-4 also shows that bits 7–6 of `TAxCTL` (the `ID` field) control the timer input divider. To divide by 2, we set bit 7 to 0 and bit 6 to 1.
+**4. Up/down mode is selected**
 
-From the table: `01b = /2`
+Table 19-4 also shows that bits 5–4 of TAxCTL (the MC field) control the timer mode. To select up/down mode, we set both bit 5 and bit 4 to 1.
 
+From the table: 11b = Up/down mode
 
-***4. Up/down mode is selected***
+**5. The output mode is configured as Toggle/Reset by setting the appropriate bits of the OUTMOD field in the CCTL[1] register**
 
-Table 19-4 also shows that bits 5–4 of `TAxCTL` (the `MC` field) control the timer mode. To select up/down mode, we set both bit 5 and bit 4 to 1.
+Table 19-6 of the Technical Reference Manual describes the TAxCCTLn register. Bits 7–5 make up the OUTMOD field, which sets the output mode. To select Toggle/Reset, we set bits 7–5 to 010b.
 
-From the table: `11b = Up/down mode`
+From the table: 010b = Toggle/reset
 
+**6. The PWM signal has a period of 20 ms and a duty cycle of 50%**
 
-***5. The output mode is configured as Toggle/Reset by setting the appropriate bits of the OUTMOD field in the CCTL[1] register***
+Period:
 
-Table 19-6 of the Technical Reference Manual describes the `TAxCCTLn` register. Bits 7–5 make up the `OUTMOD` field, which sets the output mode. To select Toggle/Reset, we set bits 7–5 to `010b`.
+We are given a period of 20 ms, so we calculate the period constant using the following general formula:
 
-From the table: `010b = Toggle/reset`
-
-
-***6. The PWM signal has a period of 20 ms and a duty cycle of 50%***
-
-**Period:** We are given a period of 20 ms, so we calculate the period constant using the following general formula:
-
-$$ \text{Period} = \frac{2 \times \text{Period constant}}{12\text{ MHz} \,/\, \text{Prescale value}} $$
+    Period = (2 x Period constant) / (12 MHz / Prescale value)
 
 Solving for the period constant:
 
-$$ \text{Period constant} = \frac{\text{Period} \times (12\text{ MHz} \,/\, \text{Prescale value})}{2} $$
+    Period constant = (Period x (12 MHz / Prescale value)) / 2
 
 Plugging in our values:
 
-$$ \frac{0.020\text{ s} \times (12\text{ MHz}/2)}{2} = \frac{0.020\text{ s} \times 6{,}000{,}000\text{ Hz}}{2} = \frac{120{,}000}{2} = 60{,}000 $$
+    (0.020 s x (12 MHz / 2)) / 2
+    = (0.020 s x 6,000,000 Hz) / 2
+    = 120,000 / 2
+    = 60,000
 
-So `TIMER_A0->CCR[0] = 60,000`.
+So TIMER_A0->CCR[0] = 60,000.
 
-**Duty cycle:**
+Duty cycle:
 
-$$ \text{Duty cycle} = \frac{\text{Input duty value}}{\text{Period constant}} $$
+    Duty cycle = Input duty value / Period constant
 
-$$ \text{Input duty value} = \text{Duty cycle} \times \text{Period constant} = 0.50 \times 60{,}000 = 30{,}000 $$
+    Input duty value = Duty cycle x Period constant
+                     = 0.50 x 60,000
+                     = 30,000
 
-So `TIMER_A0->CCR[1] = 30,000`.
+So TIMER_A0->CCR[1] = 30,000.
 
-**Check:**
+Check:
 
-$$ \text{High time} = \frac{2 \times 30{,}000}{12\text{ MHz}/2} = \frac{60{,}000}{6{,}000{,}000\text{ Hz}} = 10\text{ ms} $$
+    High time = (2 x 30,000) / (12 MHz / 2)
+              = 60,000 / 6,000,000 Hz
+              = 10 ms
 
 This is 50% of the 20 ms period.
 
-
-***Code Implmentation***
+**Code Implementation**
 
 ```c
+// Halt Timer_A0 while configuring (MC = 00b)
+TIMER_A0->CTL = 0x0000;
 
-// Setting up Port 2 Pin 4 (2.4) 
-    P2->SEL0 |= 0x10;  \\ Setting bit 4 to value of 1 for SEL0 
-    P2->SEL1 &= ~0x10; \\ Clearing bit 4 to value of 0 for SEL1 
-    P2->DIR |= 0x10;   \\ Setting bit 4 to value of 1 for SEL0
+// Setting up Port 2 Pin 4 (2.4)
+P2->SEL0 |= 0x10;    // Setting bit 4 to value of 1 for SEL0
+P2->SEL1 &= ~0x10;   // Clearing bit 4 to value of 0 for SEL1
+P2->DIR  |= 0x10;    // Setting bit 4 to value of 1 for DIR
 
-// Setting Up CTL register for Timer A 
-    // Select SMCLK = 12 MHz as timer clock source -> From the table: `10b = SMCLK` for bits 9-8
-    // Set ID = 1 (Divide timer clock by 2) -> From the table: `01b = /2` for bits 7-6
-    // Set MC = 3 (Up/Down Mode)-> From the table: `11b = Up/down mode` for bits 5-4
-    // Results in a Bit Mask of = 0000 0010 0111 0000 --> Hex Equivalent of 0x0270
+// Setting up CCTL[1] "Output Compare" mode to Toggle/Reset
+// Setting Toggle/Reset -> From the table: 010b = Toggle/reset for bits 7-5
+TIMER_A0->CCTL[1] |= 0x0040;   // Bit Mask = 0000 0000 0100 0000 --> Hex Equivalent of 0x0040
 
-    TIMER_A2->CTL |= 0x0270;
-
-// Setting up CCTL[1] "Output Capture" mode to Toggle/Reset
-
-                                  // Setting Toggle/Reset -> From the table: `010b = Toggle/reset` for bits 7-5
-    TIMER_A2->CCTL[1] |=0x0040    // Bit Mask = 0000 0000 0100 0000 --> Hex Equivalent of 0x0040
+// Setting Period Value
+TIMER_A0->CCR[0] = 60000;
 
 // Setting as a Duty Cycle of 50%
-    TIMER_A2->CCR[1] =300000 ;     // Value calculated above 
+TIMER_A0->CCR[1] = 30000;      // Value calculated above
 
+// Everything is done to set the Timer before enabling
 
+// Setting Up CTL register for Timer A
+// Select SMCLK = 12 MHz as timer clock source -> From the table: 10b = SMCLK for bits 9-8
+// Set ID = 1 (Divide timer clock by 2)        -> From the table: 01b = /2 for bits 7-6
+// Set MC = 3 (Up/Down Mode)                   -> From the table: 11b = Up/down mode for bits 5-4
+// Results in a Bit Mask of = 0000 0010 0111 0000 --> Hex Equivalent of 0x0270
+TIMER_A0->CTL |= 0x0270;
 ```
 
 
-**12.	(20 pts) Describe the steps needed to configure Timer_A0 to generate a periodic interrupt every 2 ms with an interrupt priority level of 2. Note that Timer_A0 has an interrupt number of 8.**
+**12. (20 pts) Describe the steps needed to configure Timer_A0 to generate a periodic interrupt every 2 ms with an interrupt priority level of 2. Note that Timer_A0 has an interrupt number of 8.**
 
 Use the Timer_A0_Interrupt.c driver provided in Lab 1 (Motor Control) as a reference.
 
 Include C code such that:
 
-***1. SMCLK is selected as the clock source for Timer_A with a prescaler value of 1 (which means the ID field will be 00b)***
+**1. SMCLK is selected as the clock source for Timer_A with a prescaler value of 1 (which means the ID field will be 00b)**
 
-As in Question 11, Table 19-4 of the Technical Reference Manual shows that bits 9–8 of `TAxCTL` (the `TASSEL` field) select the clock source. SMCLK is selected by setting bit 9 to 1 and bit 8 to 0.
+As in Question 11, Table 19-4 of the Technical Reference Manual shows that bits 9–8 of TAxCTL (the TASSEL field) select the clock source. SMCLK is selected by setting bit 9 to 1 and bit 8 to 0.
 
-From the table: `10b = SMCLK`
+From the table: 10b = SMCLK
 
-The same table shows that bits 7–6 (the `ID` field) control the input divider. To divide by 1, we set both bit 7 and bit 6 to 0.
+The same table shows that bits 7–6 (the ID field) control the input divider. To divide by 1, we set both bit 7 and bit 6 to 0.
 
-From the table: `00b = /1`
+From the table: 00b = /1
 
+**2. The TAIDEX field in the TAxEX0 register has a value of 000b (divide by 1)**
 
-***2. The TAIDEX field in the TAxEX0 register has a value of 000b (divide by 1)***
+Table 19-9 of the Technical Reference Manual describes the TAxEX0 register and confirms that a TAIDEX value of 000b on bits 2 - 0 gives us a result that divides the input clock by 1.
 
-Table 19-9 of the Technical Reference Manual describes the `TAxEX0` register and confirms that a `TAIDEX` value of `000b` divides the input clock by 1, matching the given requirement.
+From the table: 000b = Divide by 1
 
-From the table: `000b = Divide by 1`
+**3. Up mode is selected**
 
+Table 19-4 of the Technical Reference Manual shows that bits 5–4 of TAxCTL (the MC field) control the timer mode. To select up mode, we set bit 5 to 0 and bit 4 to 1.
 
-***3. Up mode is selected***
+From the table: 01b = Up mode
 
-Table 19-4 of the Technical Reference Manual shows that bits 5–4 of `TAxCTL` (the `MC` field) control the timer mode. To select up mode, we set bit 5 to 0 and bit 4 to 1.
+**4. Priority Setup**
 
-From the table: `01b = Up mode`
+To set up a priority level of 2, we can refer back to Table 2-54 of the Technical Reference Manual and Table 6-39 of the datasheet. These tables, along with the hint from the question, tell us that the Timer_A0 interrupt is located at interrupt 8 in the NVIC. The interrupts are housed in two registers: ISER[0] (containing interrupts 0–31) and ISER[1] (containing interrupts 32–63). So, to enable the interrupt, we set bit 8 in ISER[0].
 
-***Code Implmentation***
+As for setting the priority, since we know the interrupt is located at 8, we can see in Section 2.4.1.13 (IPR2) that we control its priority by writing to bits 7–5 of the 32-bit register, where a value of 7 means the lowest priority and 0 means the highest priority. So, for a priority level of 2, we need to write 010b to bits 7–5 while keeping everything else in the register the same.
+
+We can do this by first clearing interrupt 8's priority in IP[2] with an AND operation using the bit mask 0xFFFFFF00. Once bits 7–0, which contain the priority level for interrupt 8, are cleared, we can write our new desired priority level by placing 010b into bits 7–5, which ultimately means we OR in a value of 0x00000040.
+
+Lastly, to have the interrupt occur periodically every 2 ms, we calculate the CCR0 value using the following formula:
+
+In up mode, the timer counts from 0 to CCR0, so one period is (CCR0 + 1) counts:
+
+    Period = (CCR0 + 1) / (12 MHz / Prescale value)
+
+Solving for CCR0:
+
+    CCR0 = Period x (12 MHz / Prescale value) - 1
+
+Plugging in our values:
+
+    0.002 s x (12 MHz / 1) - 1
+    = 0.002 s x 12,000,000 Hz - 1
+    = 24,000 - 1
+    = 23,999
+
+So TIMER_A0->CCR[0] = 23,999.
+
+Check:
+
+    Period = (23,999 + 1) / 12,000,000 Hz
+           = 24,000 / 12,000,000 Hz
+           = 2 ms
+
+**Code Implementation** 
 
 ```c
+// Halt Timer_A0 while configuring (MC = 00b)
+TIMER_A0->CTL = 0x0000;
 
-    // In the CTL register, set the TASSEL and ID bits
-    // Choose SMCLK as timer clock source (TASSEL = 10b)
-    // Choose prescale value of 1 (ID = 0)
-    TIMER_A0->CTL |= 0x0200;
+// Setting EX0 register TAIDEX bits 2-0 to 000b (divide by 1)
+TIMER_A0->EX0 = 0x0000;
 
-//Left off here 
+// Enabling interrupt generation from CCR0 (CCIE = bit 4)
+TIMER_A0->CCTL[0] = 0x0010;
 
+// Giving the compare register a value for a 2 ms period
+// (12 MHz * 2 ms) - 1 = 23,999
+TIMER_A0->CCR[0] = (24000 - 1);
+
+// Setting interrupt priority
+NVIC->IP[2] &= 0xFFFFFF00;   // Clear bits 7-0 (interrupt 8's priority), keeping interrupts 9-11 the same
+NVIC->IP[2] |= 0x00000040;   // Set interrupt 8 to priority 2 (010b in bits 7-5)
+
+// Enable interrupt 8 in the NVIC by setting bit 8 of the ISER0 register
+NVIC->ISER[0] = 0x00000100;
+
+// In the CTL register, set the TASSEL, ID, MC, and TACLR bits to start the timer
+// Choose SMCLK clock source (TASSEL = 10b) Bits 9-8
+// Choose prescale value of 1 (ID = 00b) Bits 7-6
+// Choose Up Mode (MC = 01b) Bits 5-4
+// Clear the timer and divider logic (TACLR = 1) Bit 2
+TIMER_A0->CTL = 0x0214;
 ```
