@@ -58,7 +58,7 @@ We subtract 1 because the count starts at 0.
 
 The overflow period is the amount of time it takes for the timer to count through its entire range of values. It can be calculated as follows:
 
-Total number of values $ = (2^n-1) \rightarrow (2^{24}-1) = 16777215 $
+Total number of values $= (2^n-1) \rightarrow (2^{24}-1) = 16777215$
 
 Time for one count = $\frac{1}{f} = \frac{1}{10,000,000 Hz} = 0.0000001s = 100ns $
 
@@ -189,7 +189,7 @@ Plugging in our values:
     = 120,000 / 2
     = 60,000
 
-So TIMER_A0->CCR[0] = 60,000.
+So `TIMER_A0->CCR[0] = 60,000.`
 
 Duty cycle:
 
@@ -199,7 +199,7 @@ Duty cycle:
                      = 0.50 x 60,000
                      = 30,000
 
-So TIMER_A0->CCR[1] = 30,000.
+So `TIMER_A0->CCR[1] = 30,000.`
 
 Check:
 
@@ -249,11 +249,11 @@ Include C code such that:
 
 **1. SMCLK is selected as the clock source for Timer_A with a prescaler value of 1 (which means the ID field will be 00b)**
 
-As in Question 11, Table 19-4 of the Technical Reference Manual shows that bits 9–8 of TAxCTL (the TASSEL field) select the clock source. SMCLK is selected by setting bit 9 to 1 and bit 8 to 0.
+As in Question 11, Table 19-4 of the Technical Reference Manual shows that bits 9–8 of TAxCTL (the TASSEL field) select the clock source. SMCLK is selected by setting bit 9 to 1 and bit 8 to a value of 0.
 
 From the table: 10b = SMCLK
 
-The same table shows that bits 7–6 (the ID field) control the input divider. To divide by 1, we set both bit 7 and bit 6 to 0.
+The same table shows that bits 7–6 (the ID field) control the input divider. To divide by 1, we set both bit 7 and bit 6 to a value of 0.
 
 From the table: 00b = /1
 
@@ -265,7 +265,7 @@ From the table: 000b = Divide by 1
 
 **3. Up mode is selected**
 
-Table 19-4 of the Technical Reference Manual shows that bits 5–4 of TAxCTL (the MC field) control the timer mode. To select up mode, we set bit 5 to 0 and bit 4 to 1.
+Table 19-4 of the Technical Reference Manual shows that bits 5–4 of TAxCTL (the MC field) control the timer mode. To select up mode, we set bit 5 to a value of 0 and bit 4 to a value of 1.
 
 From the table: 01b = Up mode
 
